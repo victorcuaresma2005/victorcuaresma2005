@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tienda MetaMask (Demo con historial)</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+  <h1 class="text-2xl font-bold mb-4">🛒 Tienda MetaMask</h1>
+
+  <!-- Botones de conexión -->
+  <button id="connectBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Conectar MetaMask</button>
+  <button id="disconnectBtn" class="bg-gray-500 text-white px-4 py-2 rounded hidden">Desconectar</button>
+
+  <div id="accountInfo" class="mt-4"></div>
+
+  <!-- Lista de productos -->
+  <div id="products" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6"></div>
+
+  <script>
+    let provider, signer, currentAccount;
+
+    // Dirección de destino del pago
+    const ownerAddress = "0x168a63f8762D09190838f5f29dd2b4f851Cec77a";
+
+    // Productos
+    const productos = [
+      {
+        id: "dragon2",
+        nombre: "Como Entrenar a tu Dragón 2",
+        img: "https://beam-images.warnermediacdn.com/BEAM_LWM_DELIVERABLES/8399e81a-a6ad-4331-9313-a36499b262b3/f61e098bd1f005fb89fefcb8d38ff4ebdc6ae751.jpg?host=wbd-images.prod-vod.h264.io&partner=beamcom",
+        precio: "1.50",
+        url: "https://drive.google.com/file/d/1LLNHjXALz9033l_AFl9I8Kx_lL9cv1D3/view?usp=sharing"
+      },
+      {
+        id: "dragonlive",
+        nombre: "Como Entrenar a tu Dragón 2025",
+        img: "https://i.ytimg.com/vi/a_5D_7YMZro/maxresdefault.jpg",
+        precio: "1.51",
+        url: "https://drive.google.com/file/d/1ktDJ54pwKXNmCNtI42DS_9jjfi_schaD/view?usp=sharing"
+        },
+            {
+        id: "tortitas",
+        nombre: "Drama Completo(Esposa del CEO Vende Tortitas)",
+        img: "https://sheilaspatio.wordpress.com/wp-content/uploads/2019/12/2019-2.jpg?w=401&h=301",
+        precio: "1.01",
+        url: "https://drive.google.com/drive/folders/1w--ivo0xzLmE3Onz_FgtihEgvD5puTa1"
+      },
+      {
+        id: "paquete13",
+        nombre: "Paquete de 13 Peliculas (Latino)",
+        img: "https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABfux1iYE6bdk5apwzy28DTboWNYuhS47UnvuUe9ccGDbidC1R5z2WZpxEzD_wFbcxmU3qVRhb0ZbxiUDYkoazts2oni8trem-3Mv.jpg?r=6e2",
+        precio: "5.55",
+        url: "https://drive.google.com/drive/folders/140Qcm0wOv-c9UqDwE6IhGY6NPbl9miEh?usp=sharing"
+       },
+            {
+        id: "frozen2",
+        nombre: "Frozen 2 del 2019 (Latino)",
+        img: "https://disney.images.edge.bamgrid.com/ripcut-delivery/v2/variant/disney/626e8958-ec7e-4ffd-90b2-7b2fa22a8997/compose?aspectRatio=1.78&format=webp&width=1200",
+        precio: "1.11",
+        url: "https://drive.google.com/file/d/1BhxDKIebLgfGTsiJNsoAumI5haU0qNE0/view?usp=sharing"
+      },
+      {
+        id: "paquete3",
+        nombre: "Drama Completo (3 Dramas en Español)",
+        img: "https://sheilaspatio.wordpress.com/wp-content/uploads/2019/12/2019-2.jpg?w=401&h=301",
+        precio: "3.33",
+        url: "https://drive.google.com/drive/folders/17a0rjAQekcewGLk_4rvJIIRJ3sy8RCLx?usp=sharing"
+       },
+            {
+        id: "ligueash",
+        nombre: "Una Liga para ASH",
+        img: "https://pokemon-project.com/cdn-cgi/image/width=400/https://pokemon-project.com/pokemon_anime/main/EP0926.jpg",
+        precio: "0.99",
+        url: "https://drive.google.com/file/d/10Cg76zt99Wop8xYOyahqql2rBRc_HCQ3/view?usp=sharing"
+      },
+      {
+        id: "paquetecompleto",
+        nombre: "Paquete Completo",
+        img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_AnjjQfLzP7RDgQTqZbjBIz5LQRdbOHAdBg&s",
+        precio: "99.99",
+        url: "https://api.whatsapp.com/send?phone=51907330208&text=QUIERO%20EL%20PAQUETE%20COMPLETO%20PAGUE%20CON%20ETH%20o%20PLIN"
+     },
+            {
+        id: "datapokemon",
+        nombre: "Pokemon XyZ algunos Capitulos",
+        img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmGGf1v26UN6-ZYTLKoPfz6A7s227RJlZJEQ&s",
+        precio: "2.22",
+        url: "https://drive.google.com/drive/folders/1aa3-31R1ZqUp_IXIInu6IynTSPquDNv9?usp=sharing"
+      },
+      {
+        id: "dramaprimeravista",
+        nombre: "Amor a Primera Vista (Spanish)",
+        img: "https://ethic.es/wp-content/uploads/2021/06/amor-amp.jpg",
+        precio: "1.05",
+        url: "https://drive.google.com/file/d/1hcBpQqeWirsCAMkyKxlB6dls1UZjWgx7/view?usp=sharing"
+      },
+      {
+        id: "music",
+        nombre: "Music",
+        img: "https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png",
+        precio: "0.50",
+        url: "https://drive.google.com/drive/folders/1917cIZg49e583W72PYyl_SQJiC04kJ9L?usp=sharing"
+      },
+      {
+        id: "morat",
+        nombre: "Morat Concierto Completo (PERU)",
+        img: "https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png",
+        precio: "0.66",
+        url: "https://drive.google.com/file/d/14E-T9jB5rfHvExajGnd6lu3Abxuq3yMi/view?usp=sharing"
+      }
+    ];
+
+    // 🔑 Guardar compras por wallet
+    function getPurchases() {
+      const data = localStorage.getItem("purchases");
+      return data ? JSON.parse(data) : {};
+    }
+
+    function savePurchase(account, productId) {
+      const purchases = getPurchases();
+      if (!purchases[account]) purchases[account] = [];
+      if (!purchases[account].includes(productId)) {
+        purchases[account].push(productId);
+      }
+      localStorage.setItem("purchases", JSON.stringify(purchases));
+    }
+
+    function hasPurchased(account, productId) {
+      const purchases = getPurchases();
+      return purchases[account]?.includes(productId);
+    }
+
+    // Renderizar productos
+    function renderProductos() {
+      const cont = document.getElementById("products");
+      cont.innerHTML = "";
+      productos.forEach((p, i) => {
+        const comprado = currentAccount && hasPurchased(currentAccount, p.id);
+        const div = document.createElement("div");
+        div.className = "bg-white shadow p-4 rounded text-center";
+        div.innerHTML = `
+          <img src="${p.img}" class="w-full h-40 object-contain mb-2"/>
+          <h2 class="font-bold">${p.nombre}</h2>
+          <p class="text-gray-700">${p.precio} ETH</p>
+          <div id="actions-${i}">
+            ${comprado
+              ? `<a href="${p.url}" target="_blank" class="bg-purple-500 text-white px-4 py-2 mt-2 rounded inline-block">Ver producto</a>`
+              : `<button onclick="pay(${i})" class="bg-green-500 text-white px-4 py-2 mt-2 rounded">Pagar</button>`
+            }
+          </div>
+        `;
+        cont.appendChild(div);
+      });
+    }
+
+    // Conectar MetaMask
+    async function connectMetaMask() {
+      if (typeof window.ethereum === "undefined") {
+        alert("MetaMask no está instalado.");
+        return;
+      }
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        currentAccount = await signer.getAddress();
+
+        const balance = await provider.getBalance(currentAccount);
+        const ethBalance = ethers.utils.formatEther(balance);
+
+        document.getElementById("accountInfo").innerText =
+          `Conectado: ${currentAccount} (Saldo: ${parseFloat(ethBalance).toFixed(4)} ETH)`;
+
+        document.getElementById("connectBtn").classList.add("hidden");
+        document.getElementById("disconnectBtn").classList.remove("hidden");
+
+        renderProductos();
+      } catch (err) {
+        console.error(err);
+        alert("Error al conectar MetaMask.");
+      }
+    }
+
+    // Desconectar
+    function disconnectMetaMask() {
+      currentAccount = null;
+      signer = null;
+      provider = null;
+      document.getElementById("accountInfo").innerText = "No conectado";
+      document.getElementById("connectBtn").classList.remove("hidden");
+      document.getElementById("disconnectBtn").classList.add("hidden");
+      renderProductos();
+    }
+
+    // Pago
+    async function pay(i) {
+      if (!signer) {
+        alert("Primero conecta MetaMask.");
+        return;
+      }
+      try {
+        const tx = await signer.sendTransaction({
+          to: ownerAddress,
+          value: ethers.utils.parseEther(productos[i].precio)
+        });
+        console.log("TX enviada:", tx.hash);
+        await tx.wait();
+
+        // Guardar compra de este usuario
+        savePurchase(currentAccount, productos[i].id);
+
+        renderProductos(); // refrescar vista
+        alert("Pago realizado con éxito 🎉 Ahora puedes ver tu producto.");
+      } catch (err) {
+        console.error("Error durante el pago:", err);
+        alert("Error durante el pago: " + err.message);
+      }
+    }
+
+    // Eventos
+    document.getElementById("connectBtn").addEventListener("click", connectMetaMask);
+    document.getElementById("disconnectBtn").addEventListener("click", disconnectMetaMask);
+
+    // Render inicial
+    renderProductos();
+  </script>
+</body>
+</html>
