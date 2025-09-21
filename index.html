@@ -2,28 +2,311 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Tienda MetaMask (Demo con historial)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tienda Digital Premium</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* QR Popup Styles */
+    .qr-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    .qr-popup {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.5s ease-out;
+      position: relative;
+    }
+    
+    .qr-popup h2 {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    
+    .qr-popup p {
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 20px;
+      font-size: 1rem;
+    }
+    
+    .qr-image {
+      width: 250px;
+      height: auto;
+      max-height: 200px;
+      border-radius: 15px;
+      margin: 0 auto 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      object-fit: contain;
+    }
+    
+    .qr-close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    
+    .qr-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+    
+    .qr-support-btn {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 25px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+    
+    .qr-support-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .qr-popup {
+        padding: 25px 20px;
+        margin: 10px;
+        max-width: 350px;
+      }
+      
+      .qr-popup h2 {
+        font-size: 1.3rem;
+      }
+      
+      .qr-image {
+        width: 220px;
+        height: auto;
+        max-height: 180px;
+      }
+      
+      .qr-popup p {
+        font-size: 0.9rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .qr-popup {
+        padding: 20px 15px;
+        margin: 5px;
+        max-width: 320px;
+      }
+      
+      .qr-image {
+        width: 200px;
+        height: auto;
+        max-height: 160px;
+      }
+      
+      .qr-popup h2 {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 p-8">
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+  
+  <!-- QR Support Popup -->
+  <div id="qrPopup" class="qr-overlay">
+    <div class="qr-popup">
+      <button class="qr-close-btn" onclick="closeQRPopup()">×</button>
+      <h2>💝 Apoya esta página</h2>
+      <p>Escanea el código QR para apoyar el desarrollo de esta plataforma</p>
+      <img src="https://drive.google.com/thumbnail?id=1qgDnlE0HrU27eWxn8SDoANG5XOTrXOGC&sz=w400" 
+           alt="QR de Apoyo" 
+           class="qr-image"
+           onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVSUk9SPC90ZXh0Pjwvc3ZnPg=='">
+      <button class="qr-support-btn" onclick="closeQRPopup()">
+        ✨ ¡Gracias por tu apoyo!
+      </button>
+    </div>
+  </div>
+  
+  <!-- Login Container -->
+  <div id="loginContainer" class="w-full max-w-md">
+    <div class="glass-effect rounded-2xl p-8 shadow-2xl">
+      <!-- Logo/Header -->
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">🎬 Tienda Digital Premium</h1>
+        <p class="text-gray-200">Accede a contenido exclusivo</p>
+      </div>
 
-  <h1 class="text-2xl font-bold mb-4">🛒 Tienda MetaMask</h1>
+      <!-- Login Form -->
+      <form id="loginForm" class="space-y-6">
+        <div>
+          <label for="email" class="block text-sm font-medium text-white mb-2">Correo Electrónico</label>
+          <input 
+            type="email" 
+            id="email" 
+            required
+            class="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+            placeholder="tu@email.com"
+          />
+        </div>
+        
+        <div>
+          <label for="password" class="block text-sm font-medium text-white mb-2">Contraseña</label>
+          <input 
+            type="password" 
+            id="password" 
+            required
+            class="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+            placeholder="••••••••"
+          />
+        </div>
 
-  <!-- Botones de conexión -->
-  <button id="connectBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Conectar MetaMask</button>
-  <button id="disconnectBtn" class="bg-gray-500 text-white px-4 py-2 rounded hidden">Desconectar</button>
+        <button 
+          type="submit" 
+          class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
+        >
+          🔐 Iniciar Sesión
+        </button>
+      </form>
 
-  <div id="accountInfo" class="mt-4"></div>
+      <!-- Divider -->
+      <div class="flex items-center my-6">
+        <div class="flex-1 border-t border-white/30"></div>
+        <span class="px-4 text-white/70 text-sm">o</span>
+        <div class="flex-1 border-t border-white/30"></div>
+      </div>
 
-  <!-- Lista de productos -->
-  <div id="products" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6"></div>
+      <!-- MetaMask Button -->
+      <button 
+        id="connectBtn" 
+        class="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
+      >
+        <span>🦊</span>
+        <span>Conectar con MetaMask</span>
+      </button>
+
+      <!-- Error Message -->
+      <div id="errorMessage" class="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-200 text-sm hidden"></div>
+    </div>
+  </div>
+
+  <!-- Store Container (Hidden initially) -->
+  <div id="storeContainer" class="w-full max-w-7xl hidden">
+    <!-- Header -->
+    <div class="glass-effect rounded-2xl p-6 mb-8">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold text-white mb-2">🛒 Tienda MetaMask</h1>
+          <p class="text-gray-200">Contenido digital premium</p>
+        </div>
+        <button 
+          id="disconnectBtn" 
+          class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300"
+        >
+          Desconectar
+        </button>
+      </div>
+      <div id="accountInfo" class="mt-4 text-white"></div>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="products" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+  </div>
+
+  <!-- Direct Access Container (Hidden initially) -->
+  <div id="directAccessContainer" class="w-full max-w-md hidden">
+    <div class="glass-effect rounded-2xl p-8 shadow-2xl text-center">
+      <h2 class="text-2xl font-bold text-white mb-4">🎉 Acceso Autorizado</h2>
+      <p class="text-gray-200 mb-6">Bienvenido al contenido premium</p>
+      <a 
+        href="https://drive.google.com/drive/folders/1cPVaKYAMi6yufkxFN24fCBBRGU-a7mlW?usp=sharing" 
+        target="_blank"
+        class="inline-block bg-gradient-to-r from-green-500 to-blue-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-green-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
+      >
+        👁️ Ver Contenido
+      </a>
+    </div>
+  </div>
 
   <script>
     let provider, signer, currentAccount;
 
     // Dirección de destino del pago
     const ownerAddress = "0x168a63f8762D09190838f5f29dd2b4f851Cec77a";
+
+    // Credenciales válidas
+    const validCredentials = {
+      email: "noiting@noiting.com.pe",
+      password: "RealHastaLaMuerte"
+    };
 
     // Productos
     const productos = [
@@ -40,8 +323,8 @@
         img: "https://i.ytimg.com/vi/a_5D_7YMZro/maxresdefault.jpg",
         precio: "1.51",
         url: "https://drive.google.com/file/d/1ktDJ54pwKXNmCNtI42DS_9jjfi_schaD/view?usp=sharing"
-        },
-            {
+      },
+      {
         id: "tortitas",
         nombre: "Drama Completo(Esposa del CEO Vende Tortitas)",
         img: "https://sheilaspatio.wordpress.com/wp-content/uploads/2019/12/2019-2.jpg?w=401&h=301",
@@ -54,8 +337,8 @@
         img: "https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABfux1iYE6bdk5apwzy28DTboWNYuhS47UnvuUe9ccGDbidC1R5z2WZpxEzD_wFbcxmU3qVRhb0ZbxiUDYkoazts2oni8trem-3Mv.jpg?r=6e2",
         precio: "5.55",
         url: "https://drive.google.com/drive/folders/140Qcm0wOv-c9UqDwE6IhGY6NPbl9miEh?usp=sharing"
-       },
-            {
+      },
+      {
         id: "frozen2",
         nombre: "Frozen 2 del 2019 (Latino)",
         img: "https://disney.images.edge.bamgrid.com/ripcut-delivery/v2/variant/disney/626e8958-ec7e-4ffd-90b2-7b2fa22a8997/compose?aspectRatio=1.78&format=webp&width=1200",
@@ -68,8 +351,8 @@
         img: "https://sheilaspatio.wordpress.com/wp-content/uploads/2019/12/2019-2.jpg?w=401&h=301",
         precio: "3.33",
         url: "https://drive.google.com/drive/folders/17a0rjAQekcewGLk_4rvJIIRJ3sy8RCLx?usp=sharing"
-       },
-            {
+      },
+      {
         id: "ligueash",
         nombre: "Una Liga para ASH",
         img: "https://pokemon-project.com/cdn-cgi/image/width=400/https://pokemon-project.com/pokemon_anime/main/EP0926.jpg",
@@ -82,8 +365,8 @@
         img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_AnjjQfLzP7RDgQTqZbjBIz5LQRdbOHAdBg&s",
         precio: "99.99",
         url: "https://api.whatsapp.com/send?phone=51907330208&text=QUIERO%20EL%20PAQUETE%20COMPLETO%20PAGUE%20CON%20ETH%20o%20PLIN"
-     },
-            {
+      },
+      {
         id: "datapokemon",
         nombre: "Pokemon XyZ algunos Capitulos",
         img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmGGf1v26UN6-ZYTLKoPfz6A7s227RJlZJEQ&s",
@@ -105,11 +388,11 @@
         url: "https://drive.google.com/drive/folders/1917cIZg49e583W72PYyl_SQJiC04kJ9L?usp=sharing"
       },
       {
-        id: "morat",
-        nombre: "Morat Concierto Completo (PERU)",
-        img: "https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png",
-        precio: "0.66",
-        url: "https://drive.google.com/file/d/14E-T9jB5rfHvExajGnd6lu3Abxuq3yMi/view?usp=sharing"
+        id: "dramalistacompleta",
+        nombre: "Paquete Completo de DRAMAS",
+        img: "https://i0.wp.com/www.maryajosess.com/wp-content/uploads/2022/06/DORAMAS-4.jpg?ssl=1",
+        precio: "29.99",
+        url: "https://drive.google.com/drive/folders/1cPVaKYAMi6yufkxFN24fCBBRGU-a7mlW?usp=sharing"
       }
     ];
 
@@ -133,6 +416,30 @@
       return purchases[account]?.includes(productId);
     }
 
+    // Mostrar error
+    function showError(message) {
+      const errorDiv = document.getElementById("errorMessage");
+      errorDiv.textContent = message;
+      errorDiv.classList.remove("hidden");
+      setTimeout(() => {
+        errorDiv.classList.add("hidden");
+      }, 5000);
+    }
+
+    // Validar credenciales
+    function validateCredentials(email, password) {
+      return email === validCredentials.email && password === validCredentials.password;
+    }
+
+    // Cambiar vista
+    function showView(viewName) {
+      document.getElementById("loginContainer").classList.add("hidden");
+      document.getElementById("storeContainer").classList.add("hidden");
+      document.getElementById("directAccessContainer").classList.add("hidden");
+      
+      document.getElementById(viewName).classList.remove("hidden");
+    }
+
     // Renderizar productos
     function renderProductos() {
       const cont = document.getElementById("products");
@@ -140,15 +447,15 @@
       productos.forEach((p, i) => {
         const comprado = currentAccount && hasPurchased(currentAccount, p.id);
         const div = document.createElement("div");
-        div.className = "bg-white shadow p-4 rounded text-center";
+        div.className = "glass-effect rounded-xl p-6 card-hover";
         div.innerHTML = `
-          <img src="${p.img}" class="w-full h-40 object-contain mb-2"/>
-          <h2 class="font-bold">${p.nombre}</h2>
-          <p class="text-gray-700">${p.precio} ETH</p>
+          <img src="${p.img}" class="w-full h-48 object-cover rounded-lg mb-4"/>
+          <h3 class="text-xl font-bold text-white mb-2">${p.nombre}</h3>
+          <p class="text-gray-200 mb-4">${p.precio} ETH</p>
           <div id="actions-${i}">
             ${comprado
-              ? `<a href="${p.url}" target="_blank" class="bg-purple-500 text-white px-4 py-2 mt-2 rounded inline-block">Ver producto</a>`
-              : `<button onclick="pay(${i})" class="bg-green-500 text-white px-4 py-2 mt-2 rounded">Pagar</button>`
+              ? `<a href="${p.url}" target="_blank" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 inline-block text-center">Ver producto</a>`
+              : `<button onclick="pay(${i})" class="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-blue-600 transition-all duration-300">Pagar</button>`
             }
           </div>
         `;
@@ -159,7 +466,7 @@
     // Conectar MetaMask
     async function connectMetaMask() {
       if (typeof window.ethereum === "undefined") {
-        alert("MetaMask no está instalado.");
+        showError("MetaMask no está instalado.");
         return;
       }
       try {
@@ -171,16 +478,18 @@
         const balance = await provider.getBalance(currentAccount);
         const ethBalance = ethers.utils.formatEther(balance);
 
-        document.getElementById("accountInfo").innerText =
-          `Conectado: ${currentAccount} (Saldo: ${parseFloat(ethBalance).toFixed(4)} ETH)`;
+        document.getElementById("accountInfo").innerHTML = `
+          <div class="bg-white/10 rounded-lg p-4">
+            <p class="text-white font-semibold">Conectado: ${currentAccount}</p>
+            <p class="text-gray-200">Saldo: ${parseFloat(ethBalance).toFixed(4)} ETH</p>
+          </div>
+        `;
 
-        document.getElementById("connectBtn").classList.add("hidden");
-        document.getElementById("disconnectBtn").classList.remove("hidden");
-
+        showView("storeContainer");
         renderProductos();
       } catch (err) {
         console.error(err);
-        alert("Error al conectar MetaMask.");
+        showError("Error al conectar MetaMask.");
       }
     }
 
@@ -189,16 +498,13 @@
       currentAccount = null;
       signer = null;
       provider = null;
-      document.getElementById("accountInfo").innerText = "No conectado";
-      document.getElementById("connectBtn").classList.remove("hidden");
-      document.getElementById("disconnectBtn").classList.add("hidden");
-      renderProductos();
+      showView("loginContainer");
     }
 
     // Pago
     async function pay(i) {
       if (!signer) {
-        alert("Primero conecta MetaMask.");
+        showError("Primero conecta MetaMask.");
         return;
       }
       try {
@@ -216,16 +522,51 @@
         alert("Pago realizado con éxito 🎉 Ahora puedes ver tu producto.");
       } catch (err) {
         console.error("Error durante el pago:", err);
-        alert("Error durante el pago: " + err.message);
+        showError("Error durante el pago: " + err.message);
       }
     }
 
     // Eventos
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      
+      if (validateCredentials(email, password)) {
+        showView("directAccessContainer");
+      } else {
+        showError("Credenciales incorrectas. Inténtalo de nuevo.");
+      }
+    });
+
     document.getElementById("connectBtn").addEventListener("click", connectMetaMask);
     document.getElementById("disconnectBtn").addEventListener("click", disconnectMetaMask);
 
-    // Render inicial
-    renderProductos();
+    // Función para cerrar el popup QR
+    function closeQRPopup() {
+      const qrPopup = document.getElementById("qrPopup");
+      qrPopup.style.animation = "fadeOut 0.3s ease-out";
+      setTimeout(() => {
+        qrPopup.style.display = "none";
+      }, 300);
+    }
+
+    // Auto-cerrar el popup después de 10 segundos
+    function autoCloseQR() {
+      setTimeout(() => {
+        if (document.getElementById("qrPopup").style.display !== "none") {
+          closeQRPopup();
+        }
+      }, 10000);
+    }
+
+    // Inicializar
+    showView("loginContainer");
+    
+    // Mostrar popup QR al cargar la página
+    document.addEventListener("DOMContentLoaded", function() {
+      autoCloseQR();
+    });
   </script>
 </body>
 </html>
